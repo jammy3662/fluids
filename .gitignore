@@ -1,0 +1,6 @@
+res/texture
+res/sfx
+res/mesh
+*.png
+*.x86_64
+*.glb
