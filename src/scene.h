@@ -3,16 +3,16 @@
 #include <node.h>
 #include <camera.h>
 #include <render.h>
-#include <paint.h>
 
 struct Scene
 {
-	Color bgColor = {0x10, 0x10, 0x10, 0xff};
+	Color bgColor = {0,0,0,0};
 	Array<Node*> nodes;
 	
 	Camera3D* activeCamera;
 	
 	RenderTexture frame;
+	RenderTexture depth;
 	
 	inline void setCamera(Camera* c)
 	{
@@ -28,6 +28,7 @@ struct Scene
 void InitScene(Scene& scn)
 {
 	scn.frame = LoadRenderTextureWithDepthTexture(fwidth, fheight);
+	scn.depth = LoadRenderTexture(fwidth, fheight);
 	fori (n, scn.nodes, n->init();)
 }
 
@@ -55,5 +56,13 @@ void RenderScene(Scene& scn)
 				n->draw();
 		})
 		
+	EndTextureMode();
+	
+	// normalize depth values to make them usable
+	BeginTextureMode(scn.depth);
+	ClearBackground({0,0,0,0});
+	BeginShaderMode(depthShader);
+	DrawTexturePro(scn.frame.depth, {0,0, fwidth, -fheight}, {0,0, fwidth, fheight}, {0,0}, 0, {255,255,255,255});
+	EndShaderMode();
 	EndTextureMode();
 }

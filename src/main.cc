@@ -42,8 +42,9 @@ int main(int argc, char** argv)
 	SetExitKey(KEY_NULL);
 	SetTargetFPS(60);
 	
+	EnableDepthBuffer();
+	
 	Scene scn;
-	Scene paintscn;
 	
 	running = 1;
 	
@@ -53,7 +54,6 @@ int main(int argc, char** argv)
 	scn.addNode(&pl);
 	
 	scn.setCamera(&pl.camera);
-	paintscn.setCamera(&pl.camera);
 	
 	Model m;
 	m.rl = LoadModel("res/mesh/underpass.glb");
@@ -62,25 +62,35 @@ int main(int argc, char** argv)
 	InitScene(scn);
 	
 	InitPaint();
-	PaintContext pcon = CreatePaintContext(scn.frame);
+	PaintContext pcon;
+	InitScene(pcon);
+	pcon.setCamera(&pl.camera);
 	
 	PaintObj p;
 	p.position = {0,2,0};
 	p.radius = 0.5;
+	p.color = {0,255,0,255};
 	
-	pcon.paint.append(p);
+	pcon.addNode(&p);
 	
 	while (running)
 	{
 		ProcessScene(scn);
+		ProcessScene(pcon);
 		
 		BeginDrawing();
 		ClearBackground({0x10,0x10,0x10,0xff});
 		
 		RenderScene(scn);
+		RenderScene(pcon);
 		
 		DrawFrame(scn.frame.texture, fwidth, fheight);
-		DrawPaint(pcon, scn.activeCamera);
+		
+		BeginShaderMode(paintClipper);
+			SetShaderTexture(paintClipper, "zpaint", pcon.depth.texture);
+			SetShaderTexture(paintClipper, "zterrain", scn.depth.texture);
+			DrawFrame(pcon.frame.texture, fwidth, fheight);
+		EndShaderMode();
 		
 		EndDrawing();
 		

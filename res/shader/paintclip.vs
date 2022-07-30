@@ -6,16 +6,11 @@ in vec4 vertexColor;
 
 out vec2 fragTexCoord;
 out vec4 fragColor;
-out mat4 projection;
 
 uniform mat4 mvp;
 
 void main()
 {
-	// send the projection matrix to the fragment shader
-	// to normalize input depth buffer
-	projection = mvp;
-	
 	fragTexCoord = vertexTexCoord;
 	fragColor = vertexColor;
 	gl_Position = mvp*vec4(vertexPosition, 1.0);

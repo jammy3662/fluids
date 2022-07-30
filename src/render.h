@@ -81,6 +81,7 @@ RenderTexture2D LoadRenderTextureWithDepthTexture(int width, int height)
         rlFramebufferAttach(target.id, target.depth.id, RL_ATTACHMENT_DEPTH, RL_ATTACHMENT_TEXTURE2D, 0);
 
         // Check if fbo is complete with attachments (valid)
+		if (rlFramebufferComplete(target.id)) printf("Framebuffer object %i created successfully\n", target.id);
         if (rlFramebufferComplete(target.id)) TRACELOG(LOG_INFO, "FBO: [ID %i] Framebuffer object created successfully", target.id);
 
         rlDisableFramebuffer();
