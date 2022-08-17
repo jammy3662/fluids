@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <raylib.h>
 #include <raymath.h>
-#define ZEXT_FOR
 #include <ext.h>
 
 // render output width and height
@@ -20,12 +19,44 @@ void DrawFrame(Texture frame, float w, float h)
 			0, {0xff,0xff,0xff,0xff});
 }
 
+Camera3D* active_camera;
+
+// key binds
+int16 knorth = KEY_W;
+int16 ksouth = KEY_S;
+int16  keast = KEY_D;
+int16  kwest = KEY_A;
+
+int16 kshift = KEY_LEFT_SHIFT;
+int16  kctrl = KEY_LEFT_CONTROL;
+int16  kjump = KEY_SPACE;
+int16   ktab = KEY_TAB;
+
+int16    kup = KEY_UP;
+int16  kdown = KEY_DOWN;
+int16 kright = KEY_RIGHT;
+int16  kleft = KEY_LEFT;
+
+int16  kexit = KEY_ESCAPE;
+
+enum teams
+{
+	ghost, // no interaction with world ~ for spectating or replays
+	none,  // cannot paint, kill, or be killed ~ for hub world or testing
+	alpha, // arbitrary team 1
+	beta,  // arbitrary team 2
+	delta, // arbitrary team 3
+	sigma, // arbitrary team 4
+};
+
 #include <render.h>
 #include <camera.h>
 #include <scene.h>
 #include <mesh.h>
 #include <paint.h>
+#include <fluid.h>
 #include <player.h>
+#include "world.h"
 
 int8 running = 0;
 
@@ -43,54 +74,39 @@ int main(int argc, char** argv)
 	SetTargetFPS(60);
 	
 	EnableDepthBuffer();
-	
-	Scene scn;
+	InitPaint();
+	InitFluid();
 	
 	running = 1;
 	
+	Scene scn;
+	World game;
 	Player pl;
-	pl.position = {0,5,0};
-	pl.depthvs = false;
-	scn.addNode(&pl);
 	
-	scn.setCamera(&pl.camera);
+	pl.position = {0,5,0};
+	pl.addToScene(scn);
 	
 	Model m;
 	m.rl = LoadModel("res/mesh/underpass.glb");
-	scn.addNode(&m);
+	m.addToScene(scn);
 	
-	InitScene(scn);
+	active_camera = &pl.camera.rl;
 	
-	InitPaint();
-	PaintContext pcon;
-	InitScene(pcon);
-	pcon.setCamera(&pl.camera);
-	
-	PaintObj p;
-	p.position = {0,2,0};
-	p.radius = 0.5;
-	p.color = {0,255,0,255};
-	
-	pcon.addNode(&p);
+	scn.setCamera(pl.camera);
+	scn.init();
 	
 	while (running)
 	{
-		ProcessScene(scn);
-		ProcessScene(pcon);
+		scn.update();
+		//fluidscn.update();
 		
 		BeginDrawing();
 		ClearBackground({0x10,0x10,0x10,0xff});
 		
-		RenderScene(scn);
-		RenderScene(pcon);
+		scn.draw();
+		//DrawFluid();
 		
 		DrawFrame(scn.frame.texture, fwidth, fheight);
-		
-		BeginShaderMode(paintClipper);
-			SetShaderTexture(paintClipper, "zpaint", pcon.depth.texture);
-			SetShaderTexture(paintClipper, "zterrain", scn.depth.texture);
-			DrawFrame(pcon.frame.texture, fwidth, fheight);
-		EndShaderMode();
 		
 		EndDrawing();
 		

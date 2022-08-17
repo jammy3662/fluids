@@ -4,65 +4,101 @@
 #include <camera.h>
 #include <render.h>
 
-struct Scene
+struct Scene: Node
 {
 	Color bgColor = {0,0,0,0};
 	Array<Node*> nodes;
 	
+	int8 tobuf = false;
+	
 	Camera3D* activeCamera;
 	
 	RenderTexture frame;
-	RenderTexture depth;
 	
-	inline void setCamera(Camera* c)
+	inline void setCamera(Camera& c)
 	{
-		activeCamera = &c->rl;
+		activeCamera = &c.rl;
 	}
 	
-	inline void addNode(Node* n)
+	inline void addNode(Node& n)
 	{
-		nodes.append(n);
+		nodes.append(&n);
+	}
+	
+	void update()
+	{
+		forin (n, nodes, n->update();)
 	}
 };
 
-void InitScene(Scene& scn)
+struct Scene2: Scene
 {
-	scn.frame = LoadRenderTextureWithDepthTexture(fwidth, fheight);
-	scn.depth = LoadRenderTexture(fwidth, fheight);
-	fori (n, scn.nodes, n->init();)
-}
-
-void ProcessScene(Scene& scn)
-{
-	fori (n, scn.nodes, n->update();)
-}
-
-void RenderScene(Scene& scn)
-{
-	BeginTextureMode(scn.frame);
-	ClearBackground(scn.bgColor);
+	void init()
+	{
+		frame = LoadRenderTexture(fwidth, fheight);
+		forin (n, nodes, n->init();)
+	}
 	
-	BeginMode3D(*scn.activeCamera);
-		
-		fori (n, scn.nodes, {
-			if (n->mode() == WORLD and n->visible)
-				n->draw();
+	void draw(int8 tobuf = true)
+	{
+		if (tobuf)
+		{
+			BeginTextureMode(frame);
+			ClearBackground(bgColor);
+		}
+			
+		forin (n, nodes, {
+			n->draw();
 		})
-		
-	EndMode3D();
-		
-		fori (n, scn.nodes, {
-			if (n->mode() == SCREEN and n->visible)
-				n->draw();
-		})
-		
-	EndTextureMode();
+			
+		if (tobuf)
+		{
+			EndTextureMode();
+		}
+	}
+};
+
+struct Scene3: Scene
+{
+	RenderTexture depth;
 	
-	// normalize depth values to make them usable
-	BeginTextureMode(scn.depth);
-	ClearBackground({0,0,0,0});
-	BeginShaderMode(depthShader);
-	DrawTexturePro(scn.frame.depth, {0,0, fwidth, -fheight}, {0,0, fwidth, fheight}, {0,0}, 0, {255,255,255,255});
-	EndShaderMode();
-	EndTextureMode();
-}
+	void init()
+	{
+		frame = LoadRenderTextureWithDepthTexture(fwidth, fheight);
+		depth = LoadRenderTexture(fwidth, fheight);
+		forin (n, nodes, n->init();)
+	}
+	
+	void draw(int8 tobuf = true)
+	{
+		if (tobuf)
+		{
+			BeginTextureMode(frame);
+			ClearBackground(bgColor);
+		}
+			
+		BeginMode3D(*activeCamera);
+			
+		forin (n, nodes,
+		{
+			n->draw();
+		})
+			
+		EndMode3D();
+			
+		if (tobuf)
+		{
+			EndTextureMode();
+			
+			// normalize depth values to make them usable
+			BeginTextureMode(depth);
+			ClearBackground({0,0,0,0});
+			BeginShaderMode(depthShader);
+			DrawTexturePro(frame.depth, {0,0, fwidth, -fheight}, {0,0, fwidth, fheight}, {0,0}, 0, {255,255,255,255});
+			EndShaderMode();
+			EndTextureMode();
+		}
+	}
+};
+
+void Node::addToScene(Scene& scn) { scn.addNode(*this); }

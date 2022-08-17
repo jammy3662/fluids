@@ -37,26 +37,28 @@
 #define uint32 unsigned int
 #define uint64 unsigned long
 
+typedef char* str;
+
 /* --- ASCII CHARACTERS --- */
 #define VT 11  // vertical tab
 #define FF 12  // new page
 #define CR 13  // carriage return
 #define DL 127 // backspace/delete
 
-#ifdef ZEXT_FOR
-
 // iterate over range _MIN_ to _MAX_
-#define forr (ID, MIN, MAX) for (int ID = MIN; ID < MAX; ID++)
+#define fromto(ID, MIN, MAX) for (int ID = MIN; ID < MAX; ID++)
 // iterate over each element in stack array
-#define fors (ID, LST, BLOCK) { typeof(*LST) ID; for (int i = 0; i < (sizeof(LST)/sizeof(*LST)); i++) { ID = LST[i]; { BLOCK } } }
+#define forls(ID, LST, BLOCK) { typeof(*LST) ID; for (int i = 0; i < (sizeof(LST)/sizeof(*LST)); i++) { ID = LST[i]; { BLOCK } } }
 // iterate over each element in Ext array
-#define fori(ID, LST, BLOCK) { typeof(*LST.data) ID; for (int i = 0; i < LST.size; i++) { ID = LST[i]; { BLOCK } } }
-
-#endif
+#define forin(ID, LST, BLOCK) { typeof(*LST.data) ID; for (int i = 0; i < LST.size; i++) { ID = LST[i]; { BLOCK } } }
 
 #ifndef PI
 #define PI M_PI
 #endif
+
+// get rid of code without commenting it out
+// (for syntax highlighting)
+#define __cancel(BLOCK)
 
 #ifdef ZEXT_IO
 	#include <stdio.h>
@@ -154,21 +156,9 @@ int binint(char* n)
 	return ret;
 }
 
-template <class T>
-inline void flagset(T & field, int8 bit)
-{
-	field |= 1 << bit;
-}
-template <class T>
-inline void flagclear(T & field, int8 bit)
-{
-	field &= ~(1 << bit);
-}
-template <class T>
-inline T flag(T field, int8 bit)
-{
-	return field & (1 << bit);
-}
+#define flagset(field, bit) (field |= 1 << bit)
+#define flagclear(field, bit) (field &= ~(1 << bit))
+#define flag(field, bit) (field & (1 << bit))
 
 inline float rad(float deg) {
 	return deg * PI / 180;
@@ -196,6 +186,7 @@ T clamp(T min, T val, T max)
 	if (val > max) return max;
 	return val;
 }
+
 //#define clamp(MIN, VAL, MAX) ((((VAL < MIN) ? MIN : VAL) > MAX) ? MAX : VAL)
 
 #define stint int
@@ -624,6 +615,7 @@ struct Array {
 	#endif
 };
 
+/*
 template <int size, class T>
 struct Table
 {
@@ -634,9 +626,9 @@ struct Table
 	void add(T item)
 	{
 		data[next] = item;
-
 	}
 };
+*/
 
 struct nenum: Array<char*>
 {
@@ -659,11 +651,17 @@ struct nenum: Array<char*>
 	}
 };
 
-template <class T>
+/*
+template <class K, class V>
 struct Dict
 {
-	Array<char*> keys;
-	Array<T> values;
+	struct Pair
+	{
+		K key;
+		V value;
+	}
+	
+	Array<Pair> entries;
 
 	void add(char* key, T value)
 	{
@@ -682,7 +680,7 @@ struct Dict
 
 	// returns index of first element matching 'key'
 	// returns -1 if key not found
-	int find(char* key)
+	int find(K key)
 	{
 		for (int i = 0; i < keys.size; i++)
 		{
@@ -693,7 +691,7 @@ struct Dict
 
 	// returns index of first element matching 'value'
 	// returns -1 if value not found
-	int find(T value)
+	int find(V value)
 	{
 		for (int i = 0; i < values.size; i++)
 		{
@@ -702,5 +700,6 @@ struct Dict
 		return -1;
 	}
 };
+*/
 
 #endif

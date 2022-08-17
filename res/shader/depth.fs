@@ -9,11 +9,9 @@ out vec4 finalColor;
 uniform sampler2D texture0;
 uniform vec4 colDiffuse;
 
-uniform sampler2D depth;
-
 void main()
 {
-	float z_sampled = texture2D(depth, fragTexCoord).r;
+	float z_sampled = texture2D(texture0, fragTexCoord).r;
 	float z_ndc = 2 * z_sampled - 1;
 	float M44 = projection[3][3];
 	float M43 = projection[3][2];

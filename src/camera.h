@@ -7,6 +7,13 @@
 
 struct Camera_: Node
 {
+	// expose raylib fields (hacky)
+	#define    eye rl.position
+	#define target rl.target
+	#define     up rl.up
+	#define    fov rl.fovy
+	#define   proj rl.projection
+	
 	// raylib camera object
 	Camera3D rl = 
 	{
@@ -16,13 +23,6 @@ struct Camera_: Node
 		90,
 		CAMERA_PERSPECTIVE
 	};
-	
-	// expose raylib fields
-	v3&      eye = rl.position;
-	v3&   target = rl.target;
-	v3&       up = rl.up;
-	float&   fov = rl.fovy;
-	int&    proj = rl.projection;
 	
 	// horizontal and vertical
 	// camera sensitivity
@@ -39,15 +39,10 @@ struct Camera_: Node
 	v3 position = {0,0,0}; // pov-agnostic position of camera
 	v3 facing = {0,0,0};
 	
-	int8 locked = 0;
 	// in radians
 	float pitch = 0;
 	float   yaw = 0;
 	float  roll = 0;
-	// alternate names
-	float& v = pitch;
-	float& h = yaw;
-	float& s = roll;
 	
 	// ---------------------------------
 	// implement node interface
@@ -63,18 +58,12 @@ struct Camera_: Node
 		
 		setPov(POV_FIRST);
 		
-		unlock();
+		lock(false);
 		refresh();
 	}
 	
 	void update()
 	{
-		if (IsKeyPressed(key_lock))
-		{
-			if (locked) unlock();
-			else lock();
-		}
-		
 		if (locked) return;
 		
 		if (IsKeyPressed(key_pov))
@@ -106,16 +95,10 @@ struct Camera_: Node
 		}
 	}
 	
-	void lock()
+	inline void lock(int8 l)
 	{
-		locked = 1;
-		EnableCursor();
-	}
-	
-	void unlock()
-	{
-		locked = 0;
-		DisableCursor();
+		Node::lock(l);
+		(l) ? EnableCursor() : DisableCursor();
 	}
 	
 	void setpos(v3 pos)
@@ -124,9 +107,16 @@ struct Camera_: Node
 		refresh();
 	}
 	
+	void setpos(float x, float y, float z)
+	{
+		position = {x, y, z};
+		refresh();
+	}
+	
 	void translate(v3 tr)
 	{
 		position = Vector3Add(position, tr);
+		refresh();
 	}
 	
 	void translate(float x, float y, float z)
@@ -160,4 +150,11 @@ struct Camera_: Node
 	}
 	
 	inline void togglePov() { setPov(!pov); }
+	
+	// unexpose raylib fields
+	#undef    eye
+	#undef target
+	#undef     up
+	#undef    fov
+	#undef   proj
 };

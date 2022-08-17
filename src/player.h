@@ -14,24 +14,42 @@ struct Player: Node
 	
 	v3 velocity = {0,0,0};
 	
-	// key binds
-	int16 knorth = KEY_W;
-	int16 ksouth = KEY_S;
-	int16  keast = KEY_D;
-	int16  kwest = KEY_A;
-	int16    kup = KEY_SPACE;
-	int16  kdown = KEY_LEFT_CONTROL;
-	int16  kexit = KEY_ESCAPE;
+	// expose camera fields (hacky)
+	#define yaw camera.yaw
+	#define pitch camera.pitch
 	
-	int8 locked = 0;
+	enum surface
+	{
+		clear, // unpainted surface
+		safe, // own paint
+		harm, // enemy paint
+		grate, // semisolid surface (can pass through as ceta)
+	};
 	
-	float&   yaw = camera.yaw;
-	float& pitch = camera.pitch;
+	int8 focused = false; // if set, this dummy is focused by a spectator or replay
+	
+	// ingame state
+	int8 moving = false;
+	int8 jumping = false;
+	int8 floored = false;
+	int8 climbing = false; // true when swimming up/down wall
+	int8 surface = clear;
+	int8 swimming = false; // true while in ceta form
+	int8 shifting = false; // true while transitioning forms
+	
+	v2 wishdir = {0,0};
+	v2 curdir = {0,0};
+	
+	int8 team = none;
+	
+	inline v3 eyepos()
+	{
+		return {position.x, position.y + height, position.z};
+	}
 	
 	void sync()
 	{
-		camera.position = position;
-		camera.position.y += height;
+		camera.setpos(eyepos());
 	}
 	
 	void physics()
@@ -40,6 +58,12 @@ struct Player: Node
 	}
 	
 	// --- node interface ---
+	
+	void lock(int8 l)
+	{
+		Node::lock(l);
+		camera.lock(l);
+	}
 	
 	void init()
 	{
@@ -50,44 +74,22 @@ struct Player: Node
 	
 	void update()
 	{
-		camera.update();
+		wishdir = {0,0};
 		
-		if (IsKeyPressed(kexit)) locked = !locked;
-		
-		if (locked) return;
-		
-		float dir = yaw;
-		
-		if (IsKeyDown(knorth))
+		if (!locked)
 		{
-			dir += 0;
+			if (IsKeyDown(knorth))      wishdir.y = 1;
+			else if (IsKeyDown(ksouth)) wishdir.y = -1;
+			
+			if (IsKeyDown(keast))      wishdir.x = 1;
+			else if (IsKeyDown(kwest)) wishdir.x = -1;
+			
+			wishdir = Vector2Normalize(wishdir);
+			wishdir = Vector2Rotate(wishdir, yaw);
 		}
-		else if (IsKeyDown(ksouth))
-		{
-			dir += M_PI_2;
-		}
-		else
-		{
-			velocity.z = 0;
-		}
-		if (IsKeyDown(keast))
-		{
-			velocity.x = 0.1;
-		}
-		else if (IsKeyDown(kwest))
-		{
-			velocity.x = -0.1;
-		}
-		else
-		{
-			velocity.x = 0;
-		}
-		
-		if (IsKeyDown(kup)) velocity.y = 0.1;
-		else if (IsKeyDown(kdown)) velocity.y = -0.1;
-		else velocity.y = 0;
 		
 		physics();
+		camera.update();
 		sync();
 	}
 	
@@ -96,5 +98,10 @@ struct Player: Node
 		camera.draw();
 		
 		DrawSphere(position, 0.1, {0xff,0,0,0xff});
+		DrawSphere({position.x, position.y + height, position.z}, 0.1, {0,0,0xff,0xff});
 	}
+	
+	// unexpose camera fields
+	#undef yaw
+	#undef pitch
 };
